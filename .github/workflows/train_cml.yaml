@@ -9,33 +9,36 @@ permissions: write-all
 jobs:
   train_and_report_eval_performance:
     runs-on: ubuntu-latest
+
     steps:
+      # Step 1: Checkout the repository
       - name: Checkout
         uses: actions/checkout@v3
 
+      # Step 2: Setup Python environment
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.9
 
-      # Setup CML GitHub Action
-      - name: Setup CML
-        uses: iterative/setup-cml@v1
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
+      # Step 4: Train the model
       - name: Train model
         run: |
           python3 preprocess_dataset.py
           python3 train.py
 
+      # Step 5: Write CML report
       - name: Write CML report
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Add metrics data to markdown
+          echo "### Model Evaluation Metrics" > model_eval_report.md
           cat metrics.json >> model_eval_report.md
-          
-          # Add confusion matrix plot to markdown
-          echo "![confusion matrix plot](./confusion_matrix.png)" >> model_eval_report.md
-
-          # Create comment from markdown report
+          echo "![Confusion Matrix](./confusion_matrix.png)" >> model_eval_report.md
           cml comment create model_eval_report.md
